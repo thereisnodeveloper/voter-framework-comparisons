@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from "recharts";
 
 const FRAMEWORKS = [
@@ -61,10 +61,32 @@ function avg(obj) {
 
 function InfoIcon({ tooltip, color }) {
   const [show, setShow] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, arrowLeft: "50%" });
+  const ref = useRef(null);
+  const tooltipWidth = 220;
+  const pad = 8;
+  const handleEnter = () => {
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      const centerX = r.left + r.width / 2;
+      let left = centerX - tooltipWidth / 2;
+      let arrowLeft = "50%";
+      if (left < pad) {
+        left = pad;
+        arrowLeft = Math.max(10, centerX - pad) + "px";
+      } else if (left + tooltipWidth > window.innerWidth - pad) {
+        left = window.innerWidth - pad - tooltipWidth;
+        arrowLeft = Math.min(tooltipWidth - 10, centerX - left) + "px";
+      }
+      setPos({ top: r.top, left, arrowLeft });
+    }
+    setShow(true);
+  };
   return (
     <span
+      ref={ref}
       style={{ position: "relative", display: "inline-block", cursor: "pointer", marginLeft: 4 }}
-      onMouseEnter={() => setShow(true)}
+      onMouseEnter={handleEnter}
       onMouseLeave={() => setShow(false)}
       onClick={() => setShow(s => !s)}
     >
@@ -75,14 +97,14 @@ function InfoIcon({ tooltip, color }) {
       }}>?</span>
       {show && (
         <span style={{
-          position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
+          position: "fixed", top: pos.top - 6, left: pos.left, transform: "translateY(-100%)",
           backgroundColor: "#1a1a1a", color: "#fff", fontSize: 11, lineHeight: 1.4,
-          padding: "8px 12px", borderRadius: 8, width: 220, zIndex: 100,
+          padding: "8px 12px", borderRadius: 8, width: tooltipWidth, zIndex: 9999,
           boxShadow: "0 4px 16px rgba(0,0,0,0.25)", pointerEvents: "none", textAlign: "left", fontWeight: 400,
         }}>
           {tooltip}
           <span style={{
-            position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+            position: "absolute", top: "100%", left: pos.arrowLeft, transform: "translateX(-50%)",
             borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #1a1a1a",
           }} />
         </span>
